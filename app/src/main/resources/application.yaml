@@ -1,0 +1,12 @@
+ktor:
+    application:
+        modules:
+            - com.dark.auth.ApplicationKt.module
+    deployment:
+        port: 8080
+jwt:
+    domain: "https://0.0.0.0:8080"
+    audience: "jwt-audience"
+    realm: "ktor sample app"
+    issuer: "https://0.0.0.0:8080"
+    expiretime: "3600000"

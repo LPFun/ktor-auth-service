@@ -1,0 +1,22 @@
+### signup
+POST http://localhost:8080/signup
+Content-Type: application/json
+
+{
+  "username": "User3",
+  "password": "password"
+}
+
+### signin
+POST http://localhost:8080/signin
+Content-Type: application/json
+
+{
+  "username": "User3",
+  "password": "password"
+}
+
+### secret
+GET http://localhost:8080/secret
+Content-Type: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJqd3QtYXVkaWVuY2UiLCJpc3MiOiJodHRwczovLzAuMC4wLjA6ODA4MCIsImV4cCI6MTY3Njg0MDEyNiwidXNlcklkIjoiNWY3NWY2MDQtYzQ1Yy00NDg2LWE2NzQtNDRjMGM1YWE1ZjIxIiwidXNlcm5hbWUiOiJVc2VyMyJ9.OcaVsj07oPCAv3n0LdJpCXvXReWjV-1-pk2Df60rTiw
