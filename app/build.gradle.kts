@@ -34,6 +34,13 @@ dependencies {
 
     implementation(libs.kodein.ktor)
 
+    testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
     testImplementation("io.ktor:ktor-server-tests-jvm:$ktorVersion")
-    testImplementation(libs.kotlin.test.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.jupiter.api)
+    testRuntimeOnly(libs.jupiter.engine)
+}
+
+tasks.getByName<Test>("test") {
+    useJUnitPlatform()
 }
