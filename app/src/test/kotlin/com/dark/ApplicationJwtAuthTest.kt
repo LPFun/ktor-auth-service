@@ -12,7 +12,9 @@ import com.dark.auth.plugins.configureSerialization
 import com.dark.auth.security.JwtTokenService
 import com.dark.auth.security.SHA256HashingService
 import com.dark.auth.transport.AuthRequest
+import com.dark.auth.transport.AuthResponse
 import com.dark.auth.utils.property
+import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -22,6 +24,7 @@ import io.ktor.server.application.*
 import io.ktor.server.config.*
 import io.ktor.server.engine.*
 import io.ktor.server.testing.*
+import io.ktor.util.reflect.*
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.confirmVerified
@@ -30,9 +33,9 @@ import io.mockk.junit5.MockKExtension
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.kodein.di.DI
 import org.kodein.di.bindSingleton
 import org.kodein.di.ktor.di
+import java.util.*
 
 @ExtendWith(MockKExtension::class)
 class ApplicationJwtAuthTest {
@@ -89,11 +92,60 @@ class ApplicationJwtAuthTest {
         val testClient = getTestClient()
         val response = testClient.post("/signup") {
             contentType(ContentType.Application.Json)
-            this.setBody(request)
+            setBody(request)
         }
         assertEquals(HttpStatusCode.OK, response.status)
 
         coVerify { authRepo.getUserByUserName(user.username) }
+        coVerify { authRepo.insertUser(any()) }
+
+        confirmVerified(authRepo)
+    }
+
+    @Test
+    fun successSignUpThenSignIn() = testApp {
+        val username = "username"
+        val password = "password"
+        val request = AuthRequest(
+            username = username,
+            password = password
+        )
+        val saltedHash = SHA256HashingService().generateSaltedHash(password)
+        val user = User(
+            id = UUID.randomUUID().toString(),
+            username = request.username!!,
+            password = saltedHash.hash,
+            salt = saltedHash.salt
+        )
+        coEvery {
+            authRepo.getUserByUserName(request.username!!)
+        } returns RepoResult.Success(User.NONE) andThen RepoResult.Success(user)
+        coEvery { authRepo.insertUser(any()) } coAnswers { RepoResult.Success(firstArg()) }
+
+        val testClient = getTestClient()
+        val response = testClient.post("/signup") {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+
+        val signInResponse = testClient.post("/signin"){
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+
+        val authResponse = signInResponse.body<AuthResponse>(typeInfo<AuthResponse>())
+
+        assertNotNull(authResponse.token)
+        assertTrue(authResponse.token?.length != 0)
+
+        val secretResponse = testClient.get("/secret"){
+            bearerAuth(authResponse.token!!)
+        }
+
+        assertTrue(secretResponse.bodyAsText().contains("Hello, ${user.username}!"))
+
+        coVerify { authRepo.getUserByUserName(request.username!!) }
         coVerify { authRepo.insertUser(any()) }
 
         confirmVerified(authRepo)
