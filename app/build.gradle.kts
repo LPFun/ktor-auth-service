@@ -20,6 +20,7 @@ dependencies {
     implementation(projects.repoInmemory)
     implementation(projects.transport)
     implementation(projects.logic)
+    implementation(projects.security)
 
     implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktorVersion")
     implementation("io.ktor:ktor-server-core-jvm:$ktorVersion")
@@ -30,8 +31,6 @@ dependencies {
     implementation("io.ktor:ktor-server-netty-jvm:$ktorVersion")
     implementation("io.ktor:ktor-server-config-yaml:$ktorVersion")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
-
-    implementation(libs.commons.codec)
 
     implementation(libs.kodein.ktor)
 
