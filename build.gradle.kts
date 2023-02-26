@@ -13,3 +13,7 @@ subprojects {
         mavenCentral()
     }
 }
+
+tasks.withType<JavaCompile> {
+    targetCompatibility = "11"
+}
