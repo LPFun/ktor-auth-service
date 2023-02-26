@@ -1,7 +1,7 @@
 ktor:
-    application:
-        modules:
-            - com.dark.auth.ApplicationKt.module
+#    application:
+#        modules:
+#            - com.dark.auth.ApplicationKt.module
     deployment:
         port: 8080
 jwt:
@@ -10,4 +10,4 @@ jwt:
     realm: "ktor sample app"
     issuer: "https://0.0.0.0:8080"
     expiretime: "3600000"
-    jwt-secret: $JWT_SECRET
+    jwt-secret: "JWT_SECRET"

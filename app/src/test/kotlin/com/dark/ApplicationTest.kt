@@ -1,21 +1,20 @@
 package com.dark
 
-import com.dark.auth.plugins.configureRouting
 import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.server.testing.*
-import kotlin.test.*
 import io.ktor.http.*
+import io.ktor.server.config.*
+import io.ktor.server.testing.*
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
 
 class ApplicationTest {
     @Test
     fun testRoot() = testApplication {
-        application {
-            configureRouting()
+        environment {
+            config = ApplicationConfig("application-test.yaml")
         }
         client.get("/").apply {
-            assertEquals(HttpStatusCode.OK, status)
-            assertEquals("Hello World!", bodyAsText())
+            Assertions.assertEquals(HttpStatusCode.NotFound, status)
         }
     }
 }

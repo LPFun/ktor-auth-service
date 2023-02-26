@@ -26,6 +26,7 @@ dependencyResolutionManagement {
 
             library("commons-codec","commons-codec","commons-codec").version("1.15")
 
+            library("mockk","io.mockk", "mockk").version("1.13.4")
         }
     }
 }
