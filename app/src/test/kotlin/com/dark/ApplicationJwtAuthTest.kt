@@ -103,7 +103,38 @@ class ApplicationJwtAuthTest {
     }
 
     @Test
-    fun successSignUpThenSignIn() = testApp {
+    fun successSignIn() = testApp {
+        val username = "username"
+        val password = "password"
+        val request = AuthRequest(
+            username = username,
+            password = password
+        )
+
+        val saltedHash = SHA256HashingService().generateSaltedHash(password)
+
+        val user = User(
+            id = UUID.randomUUID().toString(),
+            username = username,
+            password = saltedHash.hash,
+            salt = saltedHash.salt
+        )
+
+        coEvery { authRepo.getUserByUserName(any()) } returns RepoResult.Success(user)
+
+        val testClient = getTestClient()
+        val signInResponse = testClient.post("/signin"){
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }
+        val authResponse = signInResponse.body<AuthResponse>(typeInfo<AuthResponse>())
+
+        assertNotNull(authResponse.token)
+        assertTrue(authResponse.token?.length != 0)
+    }
+
+    @Test
+    fun successSignUpThenSignInThenPassAuthorizedEndpoint() = testApp {
         val username = "username"
         val password = "password"
         val request = AuthRequest(
@@ -113,7 +144,7 @@ class ApplicationJwtAuthTest {
         val saltedHash = SHA256HashingService().generateSaltedHash(password)
         val user = User(
             id = UUID.randomUUID().toString(),
-            username = request.username!!,
+            username = username,
             password = saltedHash.hash,
             salt = saltedHash.salt
         )
