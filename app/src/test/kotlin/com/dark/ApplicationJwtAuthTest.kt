@@ -2,18 +2,11 @@ package com.dark
 
 import com.dark.auth.common.models.RepoResult
 import com.dark.auth.common.models.User
-import com.dark.auth.common.repo.IAuthRepo
-import com.dark.auth.common.security.hashing.IHashingService
-import com.dark.auth.common.security.token.ITokenService
-import com.dark.auth.common.security.token.TokenConfig
-import com.dark.auth.plugins.configureRouting
-import com.dark.auth.plugins.configureSecurity
-import com.dark.auth.plugins.configureSerialization
-import com.dark.auth.security.JwtTokenService
+import com.dark.auth.common.repo.IUserRepo
+import com.dark.auth.plugins.*
 import com.dark.auth.security.SHA256HashingService
 import com.dark.auth.transport.AuthRequest
 import com.dark.auth.transport.AuthResponse
-import com.dark.auth.utils.property
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
@@ -41,21 +34,12 @@ import java.util.*
 class ApplicationJwtAuthTest {
 
     @MockK
-    private lateinit var authRepo: IAuthRepo
+    private lateinit var authRepo: IUserRepo
 
     private fun Application.configureTestDi() {
         di {
-            bindSingleton {
-                TokenConfig(
-                    issuer = property("jwt.issuer"),
-                    audience = property("jwt.audience"),
-                    expiresIn = property("jwt.expiretime").toLong(),
-                    secret = property("jwt.jwt-secret")
-                )
-            }
-            bindSingleton<ITokenService> { JwtTokenService() }
-            bindSingleton<IHashingService> { SHA256HashingService() }
-            bindSingleton { authRepo }
+            importAppDiModules(this@di, this@configureTestDi)
+            bindSingleton(overrides = true) { authRepo }
         }
     }
 
@@ -65,7 +49,7 @@ class ApplicationJwtAuthTest {
         }
     }
 
-    private fun testApp( block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
+    private fun testApp(block: suspend ApplicationTestBuilder.() -> Unit) = testApplication {
         environment {
             config = ApplicationConfig("application-test.yaml")
         }
@@ -123,7 +107,7 @@ class ApplicationJwtAuthTest {
         coEvery { authRepo.getUserByUserName(any()) } returns RepoResult.Success(user)
 
         val testClient = getTestClient()
-        val signInResponse = testClient.post("/signin"){
+        val signInResponse = testClient.post("/signin") {
             contentType(ContentType.Application.Json)
             setBody(request)
         }
@@ -160,7 +144,7 @@ class ApplicationJwtAuthTest {
         }
         assertEquals(HttpStatusCode.OK, response.status)
 
-        val signInResponse = testClient.post("/signin"){
+        val signInResponse = testClient.post("/signin") {
             contentType(ContentType.Application.Json)
             setBody(request)
         }
@@ -170,7 +154,7 @@ class ApplicationJwtAuthTest {
         assertNotNull(authResponse.token)
         assertTrue(authResponse.token?.length != 0)
 
-        val secretResponse = testClient.get("/secret"){
+        val secretResponse = testClient.get("/secret") {
             bearerAuth(authResponse.token!!)
         }
 

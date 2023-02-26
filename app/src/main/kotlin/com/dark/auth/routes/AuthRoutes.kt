@@ -1,16 +1,20 @@
 package com.dark.auth.routes
 
+import com.dark.auth.common.logic.AuthContext
+import com.dark.auth.common.logic.EventType
 import com.dark.auth.common.models.RepoResult
 import com.dark.auth.common.models.User
-import com.dark.auth.common.repo.IAuthRepo
+import com.dark.auth.common.repo.IUserRepo
 import com.dark.auth.common.security.hashing.IHashingService
 import com.dark.auth.common.security.hashing.SaltedHash
 import com.dark.auth.common.security.token.ITokenService
 import com.dark.auth.common.security.token.TokenClaim
 import com.dark.auth.common.security.token.TokenConfig
-import com.dark.auth.repo.inmemory.dto.UserDto
 import com.dark.auth.transport.AuthRequest
 import com.dark.auth.transport.AuthResponse
+import com.dark.auth.transport.mappings.toModel
+import com.dark.auth.transport.mappings.toTr
+import com.dark.logic.AuthChain
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -24,7 +28,7 @@ import java.util.UUID
 
 fun Route.singUp() {
     val hashingService by closestDI().instance<IHashingService>()
-    val userRepo by closestDI().instance<IAuthRepo>()
+    val userRepo by closestDI().instance<IUserRepo>()
     post("signup") {
         val request = call.receiveNullable<AuthRequest>() ?: kotlin.run {
             call.respond(HttpStatusCode.BadRequest)
@@ -73,10 +77,11 @@ fun Route.singUp() {
 }
 
 fun Route.signIn() {
-    val userRepo by closestDI().instance<IAuthRepo>()
+    val userRepo by closestDI().instance<IUserRepo>()
     val hashingService by closestDI().instance<IHashingService>()
     val tokenService by closestDI().instance<ITokenService>()
     val tokenConfig by closestDI().instance<TokenConfig>()
+    val authChain by closestDI().instance<AuthChain>()
 
     post("signin") {
         val request = call.receiveNullable<AuthRequest>() ?: kotlin.run {
@@ -84,44 +89,25 @@ fun Route.signIn() {
             return@post
         }
 
-        val user = when (val userResult = userRepo.getUserByUserName(request.username!!)) {
-            is RepoResult.Success -> {
-                if (userResult.data == User.NONE) {
-                    call.respond(HttpStatusCode.Conflict)
-                    return@post
-                }
-                userResult.data
-            }
-            is RepoResult.Error -> {
-                call.respond(HttpStatusCode.Conflict, "Error get data by request")
-                return@post
-            }
-        }
+        val signIn = request.toModel()
 
-        val isValidPassword = hashingService.verify(
-            value = request.password!!,
-            saltedHash = SaltedHash(
-                hash = user.password,
-                salt = user.salt
-            )
+        val ctx = AuthContext(
+            userRepo = userRepo,
+            hashingService = hashingService,
+            tokenService = tokenService,
+            tokenConfig = tokenConfig,
+            eventType = EventType.SIGN_IN,
+            signIn = signIn,
         )
 
-        if (!isValidPassword) {
-            call.respond(HttpStatusCode.Conflict, "Incorrect username or password")
-            return@post
-        }
+        authChain.exec(ctx)
 
-        val token = tokenService.generate(
-            config = tokenConfig,
-            TokenClaim(name = "userId", value = user.id),
-            TokenClaim(name = "username", value = user.username),
-        )
-
+        val code = ctx.authResult.code
+        val responseCode = HttpStatusCode.allStatusCodes.find { it.value == code.toInt() } ?: HttpStatusCode.NotFound
+        val response = ctx.authResult.toTr()
         call.respond(
-            status = HttpStatusCode.OK,
-            message = AuthResponse(
-                token = token
-            )
+            status = responseCode,
+            message = response
         )
     }
 }
