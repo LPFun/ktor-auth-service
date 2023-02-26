@@ -9,7 +9,7 @@ import org.cache2k.Cache2kBuilder
 
 class UserRepoInMemory: IUserRepo {
     private val cache = object : Cache2kBuilder<String, UserDto>() {}
-        .name("authRepoInMemory")
+        .name("userRepoInMemory")
         .eternal(true)
         .entryCapacity(100)
         .build()

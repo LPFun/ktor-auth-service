@@ -27,83 +27,48 @@ import org.kodein.di.ktor.closestDI
 import java.util.UUID
 
 fun Route.singUp() {
-    val hashingService by closestDI().instance<IHashingService>()
-    val userRepo by closestDI().instance<IUserRepo>()
+    val authChain by closestDI().instance<AuthChain>()
     post("signup") {
         val request = call.receiveNullable<AuthRequest>() ?: kotlin.run {
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
-        // Валидация
-        val areFieldsBlank = request.username.isNullOrBlank() || request.password.isNullOrBlank()
-        val isPasswordShort = request.password?.let {
-            it.length < 8
-        } ?: true
 
-        when (val user = userRepo.getUserByUserName(request.username!!)) {
-            is RepoResult.Success -> {
-                if (user.data != User.NONE) {
-                    call.respond(HttpStatusCode.Conflict, "Username is already exists")
-                    return@post
-                }
-            }
-
-            is RepoResult.Error -> {
-                call.respond(HttpStatusCode.Conflict, "Error get data by request")
-                return@post
-            }
-        }
-
-        if (areFieldsBlank || isPasswordShort) {
-            call.respond(HttpStatusCode.Conflict)
-            return@post
-        }
-
-        val saltedHash = hashingService.generateSaltedHash(request.password!!)
-        val user = User(
-            id = UUID.randomUUID().toString(),
-            username = request.username!!,
-            password = saltedHash.hash,
-            salt = saltedHash.salt
+        val ctx = AuthContext(
+            eventType = EventType.SIGN_UP,
+            signIn = request.toModel()
         )
-        val wasAcknowledged = userRepo.insertUser(user) is RepoResult.Success
-        if (!wasAcknowledged) {
-            call.respond(HttpStatusCode.Conflict)
-            return@post
-        } else {
-            call.respond(HttpStatusCode.OK)
-        }
+
+        authChain.exec(ctx)
+
+        ctx.authResult.toTr()
+
+        val responseCode = HttpStatusCode.allStatusCodes.find { it.value == ctx.authResult.code } ?: HttpStatusCode.NotFound
+        val response = ctx.authResult.toTr()
+        call.respond(
+            status = responseCode,
+            message = response
+        )
     }
 }
 
 fun Route.signIn() {
-    val userRepo by closestDI().instance<IUserRepo>()
-    val hashingService by closestDI().instance<IHashingService>()
-    val tokenService by closestDI().instance<ITokenService>()
-    val tokenConfig by closestDI().instance<TokenConfig>()
     val authChain by closestDI().instance<AuthChain>()
-
     post("signin") {
         val request = call.receiveNullable<AuthRequest>() ?: kotlin.run {
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
 
-        val signIn = request.toModel()
-
         val ctx = AuthContext(
-            userRepo = userRepo,
-            hashingService = hashingService,
-            tokenService = tokenService,
-            tokenConfig = tokenConfig,
             eventType = EventType.SIGN_IN,
-            signIn = signIn,
+            signIn = request.toModel(),
         )
 
         authChain.exec(ctx)
 
         val code = ctx.authResult.code
-        val responseCode = HttpStatusCode.allStatusCodes.find { it.value == code.toInt() } ?: HttpStatusCode.NotFound
+        val responseCode = HttpStatusCode.allStatusCodes.find { it.value == code } ?: HttpStatusCode.NotFound
         val response = ctx.authResult.toTr()
         call.respond(
             status = responseCode,
