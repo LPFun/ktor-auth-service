@@ -1,10 +1,10 @@
 package com.dark.logic
 
-import com.crowdproj.kotlin.cor.handlers.worker
 import com.crowdproj.kotlin.cor.rootChain
-import com.dark.auth.common.logic.*
-import com.dark.auth.common.models.RepoResult
-import com.dark.auth.common.models.User
+import com.dark.auth.common.logic.AuthContext
+import com.dark.auth.common.logic.ChainSettings
+import com.dark.auth.common.logic.EventType
+import com.dark.auth.common.logic.plus
 import com.dark.logic.common.finishChain
 import com.dark.logic.common.initChain
 import com.dark.logic.common.onEvent
@@ -13,7 +13,10 @@ import com.dark.logic.signin.generateToken
 import com.dark.logic.signin.getUser
 import com.dark.logic.signin.prepareResponse
 import com.dark.logic.signin.validateUser
-import java.util.*
+import com.dark.logic.signup.checkIfUserExists
+import com.dark.logic.signup.createUser
+import com.dark.logic.signup.insertUser
+import com.dark.logic.signup.validateSignUpUserData
 
 class AuthChain(
     private val settings: ChainSettings
@@ -33,77 +36,18 @@ class AuthChain(
                 prepareResponse("Подготовка ответа для пользователя")
             }
             onEvent(EventType.SIGN_UP, "Регистрация пользователя") {
-                // Валидация
-                worker {
-                    on { chainStatus.isRunning() }
-                    handle {
-                        val areFieldsBlank = signIn.userName.isBlank() || signIn.password.isBlank()
-                        val isPasswordShort = signIn.password.length < 8
-
-                        if (areFieldsBlank || isPasswordShort) {
-                            failure(
-                                code = 409,
-                                message = "Username of password are not valid"
-                            )
-                        }
-                    }
-                }
-
-                worker {
-                    on { chainStatus.isRunning() }
-                    handle {
-                        when (val user = userRepo.getUserByUserName(signIn.userName)) {
-                            is RepoResult.Success -> {
-                                if (user.data != User.NONE) {
-                                    failure(
-                                        code = 409,
-                                        message = "Username is already exists"
-                                        )
-                                }
-                            }
-
-                            is RepoResult.Error -> {
-                                failure(
-                                    code = 409,
-                                    message = "Error get data by request"
-                                )
-                            }
-                        }
-                    }
-                }
-
-                worker {
-                    on { chainStatus.isRunning() }
-                    handle {
-                        val saltedHash = hashingService.generateSaltedHash(signIn.password!!)
-                        user = User(
-                            id = UUID.randomUUID().toString(),
-                            username = signIn.userName,
-                            password = saltedHash.hash,
-                            salt = saltedHash.salt
-                        )
-                    }
-                }
-
-                worker {
-                    on { chainStatus.isRunning() }
-                    handle {
-                        val wasAcknowledged = userRepo.insertUser(user) is RepoResult.Success
-                        if (!wasAcknowledged) {
-                            failure(
-                                code = 409,
-                                message = "Error save user data"
-                            )
-                        }
-                    }
-                }
+                validateSignUpUserData("Валидация данных пользователя")
+                checkIfUserExists("Проверка на существование в БД")
+                createUser("Создание пользователся на основе входных данных")
+                insertUser("Сохранение пользователся")
                 prepareResponse("Подготовка ответа для пользователя")
             }
-
             finishChain("Обработка окончания цепочки")
         }.build()
     }
 }
+
+
 
 
 

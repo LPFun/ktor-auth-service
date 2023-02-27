@@ -5,6 +5,6 @@ data class SignUp(
     val password: String = ""
 ) {
     companion object {
-        val NONE = SignIn()
+        val NONE = SignUp()
     }
 }

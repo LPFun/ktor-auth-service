@@ -5,8 +5,9 @@ import com.dark.auth.common.models.User
 import com.dark.auth.common.repo.IUserRepo
 import com.dark.auth.plugins.*
 import com.dark.auth.security.SHA256HashingService
-import com.dark.auth.transport.AuthRequest
 import com.dark.auth.transport.AuthResponse
+import com.dark.auth.transport.SignInRequest
+import com.dark.auth.transport.SignUpRequest
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
@@ -64,11 +65,11 @@ class ApplicationJwtAuthTest {
 
     @Test
     fun successSignUp() = testApp {
-        val user = User(username = "user", password = "password")
+        val user = User(username = "user", password = "password8")
         coEvery { authRepo.getUserByUserName(user.username) } returns RepoResult.Success(User.NONE)
         coEvery { authRepo.insertUser(any()) } returns RepoResult.Success(User.NONE)
 
-        val request = AuthRequest(
+        val request = SignUpRequest(
             username = user.username,
             password = user.password
         )
@@ -90,7 +91,7 @@ class ApplicationJwtAuthTest {
     fun successSignIn() = testApp {
         val username = "username"
         val password = "password"
-        val request = AuthRequest(
+        val request = SignInRequest(
             username = username,
             password = password
         )
@@ -121,7 +122,7 @@ class ApplicationJwtAuthTest {
     fun successSignUpThenSignInThenPassAuthorizedEndpoint() = testApp {
         val username = "username"
         val password = "password"
-        val request = AuthRequest(
+        val request = SignUpRequest(
             username = username,
             password = password
         )

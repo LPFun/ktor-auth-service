@@ -6,5 +6,5 @@ import org.kodein.di.bindSingleton
 import org.kodein.di.instance
 
 val authChainModule = DI.Module("authChainModule"){
-    bindSingleton { AuthChain(instance()) }
+    bindSingleton(sync = false) { AuthChain(instance()) }
 }

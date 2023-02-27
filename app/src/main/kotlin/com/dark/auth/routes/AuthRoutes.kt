@@ -2,16 +2,8 @@ package com.dark.auth.routes
 
 import com.dark.auth.common.logic.AuthContext
 import com.dark.auth.common.logic.EventType
-import com.dark.auth.common.models.RepoResult
-import com.dark.auth.common.models.User
-import com.dark.auth.common.repo.IUserRepo
-import com.dark.auth.common.security.hashing.IHashingService
-import com.dark.auth.common.security.hashing.SaltedHash
-import com.dark.auth.common.security.token.ITokenService
-import com.dark.auth.common.security.token.TokenClaim
-import com.dark.auth.common.security.token.TokenConfig
-import com.dark.auth.transport.AuthRequest
-import com.dark.auth.transport.AuthResponse
+import com.dark.auth.transport.SignInRequest
+import com.dark.auth.transport.SignUpRequest
 import com.dark.auth.transport.mappings.toModel
 import com.dark.auth.transport.mappings.toTr
 import com.dark.logic.AuthChain
@@ -24,19 +16,18 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.kodein.di.instance
 import org.kodein.di.ktor.closestDI
-import java.util.UUID
 
 fun Route.singUp() {
     val authChain by closestDI().instance<AuthChain>()
     post("signup") {
-        val request = call.receiveNullable<AuthRequest>() ?: kotlin.run {
+        val request = call.receiveNullable<SignUpRequest>() ?: kotlin.run {
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
 
         val ctx = AuthContext(
             eventType = EventType.SIGN_UP,
-            signIn = request.toModel()
+            signUp = request.toModel()
         )
 
         authChain.exec(ctx)
@@ -55,7 +46,7 @@ fun Route.singUp() {
 fun Route.signIn() {
     val authChain by closestDI().instance<AuthChain>()
     post("signin") {
-        val request = call.receiveNullable<AuthRequest>() ?: kotlin.run {
+        val request = call.receiveNullable<SignInRequest>() ?: kotlin.run {
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }

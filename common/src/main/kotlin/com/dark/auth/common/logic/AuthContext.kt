@@ -1,6 +1,7 @@
 package com.dark.auth.common.logic
 
 import com.dark.auth.common.models.SignIn
+import com.dark.auth.common.models.SignUp
 import com.dark.auth.common.models.User
 import com.dark.auth.common.repo.IUserRepo
 import com.dark.auth.common.security.hashing.IHashingService
@@ -20,6 +21,7 @@ data class AuthContext(
 
     var token: String = "",
     val signIn: SignIn = SignIn.NONE,
+    val signUp: SignUp = SignUp.NONE,
     var user: User = User.NONE,
 )
 

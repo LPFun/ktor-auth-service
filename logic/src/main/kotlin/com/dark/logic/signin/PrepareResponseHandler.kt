@@ -12,7 +12,7 @@ fun ICorAddExecDsl<AuthContext>.prepareResponse(title: String) = worker {
             code = if(chainStatus.isFailure()) errors.firstOrNull()?.code ?: 404 else 200,
             errors = errors,
             token = token,
-            message = if(chainStatus.isFailure()) "Error on sign in" else "Successful sing in"
+            message = if(chainStatus.isFailure()) "Error on handle request" else "Successful handle request"
         )
     }
 }
