@@ -2,14 +2,14 @@ package com.dark.auth.repo.inmemory
 
 import com.dark.auth.common.models.RepoResult
 import com.dark.auth.common.models.User
-import com.dark.auth.common.repo.IAuthRepo
+import com.dark.auth.common.repo.IUserRepo
 import com.dark.auth.repo.inmemory.dto.UserDto
 import com.dark.auth.repo.inmemory.dto.UserDto.Companion.toDto
 import org.cache2k.Cache2kBuilder
 
-class AuthRepoInMemory: IAuthRepo {
+class UserRepoInMemory: IUserRepo {
     private val cache = object : Cache2kBuilder<String, UserDto>() {}
-        .name("authRepoInMemory")
+        .name("userRepoInMemory")
         .eternal(true)
         .entryCapacity(100)
         .build()

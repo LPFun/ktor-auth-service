@@ -1,12 +1,15 @@
 plugins {
     alias(libs.plugins.jvm)
-    alias(libs.plugins.serialization)
 }
 
 dependencies {
     implementation(projects.common)
 
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0-RC")
+    implementation(libs.commons.codec)
+    implementation(libs.kodein)
+    implementation("com.auth0:java-jwt:4.3.0")
+
+
     testImplementation(libs.jupiter.api)
     testRuntimeOnly(libs.jupiter.engine)
 }

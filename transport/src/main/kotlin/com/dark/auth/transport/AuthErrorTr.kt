@@ -3,8 +3,7 @@ package com.dark.auth.transport
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class AuthResponse(
-    val errors: List<AuthErrorTr>? = null,
-    val token: String? = null,
+data class AuthErrorTr(
+    val code: Int? = null,
     val message: String? = null,
 )
